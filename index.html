@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0B6B5E">
+<title>Bitácora TiL</title>
+<style>
+/* Programa propio. Los datos viven en un solo archivo JSON de tu Google Drive y se funden entre dispositivos. */
+:root{
+  --bg:#F1F5F3; --surface:#FFFFFF; --surface-2:#E7EDEA; --fg:#111B19; --muted:#5A6B66;
+  --line:#D3DDDA; --line-fuerte:#B6C4C0; --accent:#0B6B5E; --accent-ink:#FFFFFF; --accent-suave:#DCEDE8;
+  --warn:#8E5400; --warn-bg:#F7E8CF; --danger:#9E3326; --danger-bg:#F6DED9; --ok:#246647; --ok-bg:#DCEEE2;
+  --display:'Bahnschrift','Archivo','Segoe UI Semibold','Helvetica Neue',Arial,sans-serif;
+  --texto:'Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;
+  --dato:'Consolas','IBM Plex Mono',ui-monospace,'Courier New',monospace;
+  --sombra:0 1px 2px rgba(17,27,25,.06),0 8px 24px rgba(17,27,25,.07);
+  color-scheme:light;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0C1211; --surface:#141D1B; --surface-2:#1C2725; --fg:#E3ECE9; --muted:#8DA09B;
+  --line:#293735; --line-fuerte:#3A4A47; --accent:#43BCA6; --accent-ink:#05201B; --accent-suave:#15322D;
+  --warn:#DCA055; --warn-bg:#352814; --danger:#E4867A; --danger-bg:#39201C; --ok:#63C18D; --ok-bg:#15301F;
+  --sombra:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.35); color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0C1211; --surface:#141D1B; --surface-2:#1C2725; --fg:#E3ECE9; --muted:#8DA09B;
+  --line:#293735; --line-fuerte:#3A4A47; --accent:#43BCA6; --accent-ink:#05201B; --accent-suave:#15322D;
+  --warn:#DCA055; --warn-bg:#352814; --danger:#E4867A; --danger-bg:#39201C; --ok:#63C18D; --ok-bg:#15301F;
+  --sombra:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.35); color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--texto);font-size:15px;line-height:1.5}
+h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:.005em;font-weight:600;text-wrap:balance}
+img{max-width:100%}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--surface);z-index:12}
+
+.barra{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--surface);border-bottom:1px solid var(--line)}
+.barra-in{max-width:1140px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.marca{display:flex;align-items:baseline;gap:9px;min-width:0}
+.marca b{font-family:var(--display);font-size:18px;letter-spacing:.02em}
+.marca span{font-family:var(--dato);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.nav{display:flex;gap:2px;flex:1 1 280px;min-width:0;overflow-x:auto}
+.nav button{background:none;border:0;border-radius:7px;padding:7px 12px;color:var(--muted);font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap}
+.nav button:hover{background:var(--surface-2);color:var(--fg)}
+.nav button[aria-current="true"]{background:var(--accent-suave);color:var(--accent)}
+.nav .cuenta{font-family:var(--dato);font-size:11px;opacity:.75;margin-left:5px}
+.sync{font-family:var(--dato);font-size:11px;color:var(--muted);white-space:nowrap;display:flex;align-items:center;gap:5px;cursor:pointer;background:none;border:0;padding:4px 6px;border-radius:6px}
+.sync:hover{background:var(--surface-2)}
+.punto{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:0 0 auto}
+.punto.on{background:var(--ok)}.punto.off{background:var(--line-fuerte)}
+.punto.trabaja{background:var(--warn);animation:late 1s infinite}
+.punto.mal{background:var(--danger)}
+@keyframes late{50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.punto.trabaja{animation:none}}
+
+main{max-width:1140px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:22px 72px}
+
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:9px 15px;font-weight:600;font-size:14px;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.5;cursor:default;filter:none}
+.btn.sec{background:var(--surface);color:var(--fg);border:1px solid var(--line-fuerte)}
+.btn.sec:hover{background:var(--surface-2);filter:none}
+.btn.chico{padding:6px 11px;font-size:13px}
+.btn.peligro{background:none;color:var(--danger);border:1px solid var(--line-fuerte)}
+.campo{background:var(--surface);border:1px solid var(--line-fuerte);border-radius:8px;padding:8px 11px;width:100%;min-width:0}
+label.lbl{display:block;font-family:var(--dato);font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.vacio{border:1px dashed var(--line-fuerte);border-radius:12px;padding:26px 18px;text-align:center;color:var(--muted)}
+.vacio h3{font-size:16px;color:var(--fg);margin-bottom:6px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-family:var(--dato);font-size:11px;letter-spacing:.04em;padding:3px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.pill.vence{background:var(--danger-bg);color:var(--danger)}
+.pill.hoy{background:var(--warn-bg);color:var(--warn)}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.acc{background:var(--accent-suave);color:var(--accent)}
+.sec-tit{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 12px;flex-wrap:wrap}
+.sec-tit h2{font-size:15px;text-transform:uppercase;letter-spacing:.09em}
+.sec-tit .nota{font-family:var(--dato);font-size:11px;color:var(--muted)}
+.num{font-family:var(--dato);font-variant-numeric:tabular-nums}
+
+.cifras{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:24px}
+.cifra{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+.cifra b{font-family:var(--dato);font-size:26px;font-weight:500;display:block;line-height:1.15}
+.cifra span{font-size:12.5px;color:var(--muted)}
+.cifra.alerta{border-color:var(--danger);background:var(--danger-bg)}
+.cifra.alerta b,.cifra.alerta span{color:var(--danger)}
+.bloques{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:22px}
+
+.fila{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:0;border-bottom:1px solid var(--line);cursor:pointer;background:none;width:100%;text-align:left;color:inherit}
+.fila:last-child{border-bottom:0}
+.fila:hover{background:var(--surface-2)}
+.fila-cuerpo{flex:1 1 auto;min-width:0}
+.fila-cuerpo b{font-family:var(--display);font-size:15px;display:block;overflow-wrap:anywhere}
+.fila-cuerpo small{color:var(--muted);font-size:13px;display:block;overflow-wrap:anywhere}
+.fila-lado{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.lista{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.caja{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+
+.filtros{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:14px}
+.filtros .campo{width:auto;flex:0 1 auto}
+.filtros .buscar{flex:1 1 220px}
+
+.capa{position:fixed;inset:0;z-index:30;background:rgba(10,20,18,.45);display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;padding:max(16px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(28px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.hoja{background:var(--bg);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sombra);width:100%;max-width:650px;margin-block:auto}
+.hoja-cab{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line);background:var(--surface);border-radius:14px 14px 0 0}
+.hoja-cab h2{font-size:19px}
+.hoja-cuerpo{padding:16px 18px;display:flex;flex-direction:column;gap:18px}
+.cerrar{background:none;border:1px solid var(--line-fuerte);border-radius:8px;width:30px;height:30px;line-height:1;cursor:pointer;color:var(--muted);flex:0 0 auto}
+.rejilla{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.ancho{grid-column:1/-1}
+.pie{display:flex;flex-wrap:wrap;gap:9px;justify-content:flex-end;padding-top:4px}
+.ficha-datos{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px 18px;margin:0}
+.ficha-datos div{min-width:0}
+.ficha-datos dt{font-family:var(--dato);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.ficha-datos dd{margin:2px 0 0;overflow-wrap:anywhere}
+.ficha-datos a{color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{border:1px solid var(--line-fuerte);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:13px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent-suave);border-color:var(--accent);color:var(--accent);font-weight:600}
+.hist-it{display:flex;gap:11px;padding:10px 0;border-bottom:1px solid var(--line)}
+.hist-it:last-child{border-bottom:0}
+.hist-it .f{font-family:var(--dato);font-size:12px;color:var(--muted);flex:0 0 76px;padding-top:2px}
+.hist-it p{margin:3px 0 0;font-size:14px;overflow-wrap:anywhere}
+.aviso{font-size:13px;color:var(--muted)}
+.aviso.mal{color:var(--danger)}
+.aviso.bien{color:var(--ok)}
+.tacha{text-decoration:line-through;opacity:.55}
+.banda{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:10px 14px;margin-bottom:18px;font-size:13.5px}
+.pasos{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:9px}
+.pasos code{font-family:var(--dato);font-size:12.5px;background:var(--surface-2);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+details summary{cursor:pointer;font-weight:600}
+.botonera{display:flex;flex-wrap:wrap;gap:9px}
+
+#impresion{display:none}
+@media print{
+  .barra,main,.capa{display:none!important}
+  #impresion{display:block;color:#000;background:#fff}
+  #impresion h1{font-size:18pt;margin:0 0 2mm}
+  #impresion .sub{font-size:9pt;color:#444;margin-bottom:6mm}
+  #impresion h2{font-size:11pt;margin:6mm 0 2mm;border-bottom:1px solid #000;padding-bottom:1mm}
+  #impresion .it{border-bottom:1px dotted #999;padding:2.5mm 0;page-break-inside:avoid}
+  #impresion .it b{font-size:11pt}
+  #impresion .it small{display:block;color:#333;font-size:9pt}
+  #impresion .ren{margin-top:3mm;border-top:1px solid #000;height:14mm}
+  @page{margin:14mm}
+}
+</style>
+</head>
+<body>
+
+<div class="barra">
+  <div class="barra-in">
+    <div class="marca"><b>Bitácora TiL</b><span>Laguna · Durango · Saltillo</span></div>
+    <nav class="nav" id="nav"></nav>
+    <button class="sync" id="estado" title="Estado de sincronización"><span class="punto off"></span><span id="estado-txt">local</span></button>
+    <button class="btn chico" id="btn-nuevo">+ Cliente</button>
+  </div>
+</div>
+
+<main id="vista"></main>
+<div class="capa" id="capa-ficha" hidden></div>
+<div class="capa" id="capa-form" hidden></div>
+<div id="impresion"></div>
+
+<script>
+(function(){
+"use strict";
+var VERSION="2.0", LLAVE="bitacora-til-datos", LLAVE_CFG="bitacora-til-config", ARCHIVO="bitacora-til.json";
+var SCOPE="https://www.googleapis.com/auth/drive.file";
+
+function pad(n){return (n<10?"0":"")+n;}
+function fechaDe(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());}
+var HOY=fechaDe(new Date());
+function id(){return Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);}
+function ahora(){return Date.now();}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function sumaDias(f,n){var p=String(f).split("-");var d=new Date(+p[0],+p[1]-1,+p[2]);d.setDate(d.getDate()+(+n||0));return fechaDe(d);}
+function dias(a,b){var pa=String(a).split("-"),pb=String(b).split("-");return Math.round((Date.UTC(+pb[0],+pb[1]-1,+pb[2])-Date.UTC(+pa[0],+pa[1]-1,+pa[2]))/864e5);}
+var MESES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+var DIAS=["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+var MESESL=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+function fechaCorta(f){if(!f)return "—";var p=String(f).split("-");return (+p[2])+" "+MESES[+p[1]-1]+" "+p[0].slice(2);}
+function fechaLarga(f){var p=String(f).split("-");var d=new Date(+p[0],+p[1]-1,+p[2]);return DIAS[d.getDay()]+" "+(+p[2])+" de "+MESESL[+p[1]-1]+" de "+p[0];}
+function relativo(f){if(!f)return "";var d=dias(HOY,f);if(d===0)return "hoy";if(d===1)return "mañana";if(d===-1)return "ayer";return d<0?("hace "+(-d)+" d"):("en "+d+" d");}
+function hora(ts){return new Date(ts).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"});}
+
+var CIUDADES=["Torreón","Gómez Palacio","Lerdo","Durango","Saltillo","Monclova","Ramos Arizpe","Otra"];
+var SECTORES=["Clínico","Alimentos","Agua y suelo","Minería / metalurgia","Automotriz","Farmacéutico","Académico","Agropecuario","Ambiental","Otro"];
+var ESTADOS=["Prospecto","Contactado","Cotización enviada","Negociación","Cliente activo","En pausa"];
+var TIPOS=["Visita","Llamada","WhatsApp","Correo","Cotización","Demostración"];
+var COLS=["clientes","productos","contactos","agenda"];
+
+var S={clientes:[],productos:[],contactos:[],agenda:[],borrados:{},creado:null,
+  vista:"panel",filtros:{q:"",ciudad:"",sector:"",estado:""},ficha:null,msg:"",msgBien:false,sucio:false};
+
+var N={clientId:null,token:null,expira:0,fileId:null,marcaRemota:null,correo:null,cliente:null,
+  gisListo:false,estado:"off",detalle:"local",ultima:null,error:null};
+
+/* ===================== ALMACÉN LOCAL ===================== */
+function paquete(){
+  return {app:"bitacora-til",version:VERSION,guardado:new Date().toISOString(),creado:S.creado||new Date().toISOString(),
+    clientes:S.clientes,productos:S.productos,contactos:S.contactos,agenda:S.agenda,borrados:S.borrados};
+}
+function guardaLocal(){
+  try{localStorage.setItem(LLAVE,JSON.stringify(paquete()));}
+  catch(e){aviso("El navegador no dejó guardar en este equipo. Exporta un respaldo.");}
+}
+function cargaLocal(){
+  try{var c=localStorage.getItem(LLAVE);if(c){aplica(JSON.parse(c));return true;}}catch(e){}
+  return false;
+}
+function aplica(d){
+  COLS.forEach(function(k){S[k]=(d[k]||[]).map(function(r){if(!r.act)r.act=1;return r;});});
+  S.borrados=d.borrados||{};S.creado=d.creado||new Date().toISOString();
+}
+function guardaCfg(){
+  try{localStorage.setItem(LLAVE_CFG,JSON.stringify({clientId:N.clientId,fileId:N.fileId,correo:N.correo}));}catch(e){}
+}
+function cargaCfg(){
+  try{var c=JSON.parse(localStorage.getItem(LLAVE_CFG)||"{}");N.clientId=c.clientId||null;N.fileId=c.fileId||null;N.correo=c.correo||null;}catch(e){}
+}
+
+/* ===================== ESCRITURA ===================== */
+function guardar(col,obj){
+  obj.act=ahora();
+  var arr=S[col],i=-1;
+  for(var k=0;k<arr.length;k++)if(arr[k].id===obj.id){i=k;break;}
+  if(i<0)arr.push(obj);else arr[i]=obj;
+  tras();
+}
+function borrar(col,docId){
+  S[col]=S[col].filter(function(x){return x.id!==docId;});
+  S.borrados[docId]=ahora();
+  tras();
+}
+function tras(){S.sucio=true;guardaLocal();pinta();programaSync();}
+function aviso(t,bien){S.msg=t;S.msgBien=!!bien;pinta();setTimeout(function(){if(S.msg===t){S.msg="";pinta();}},6000);}
+
+/* ===================== FUSIÓN ENTRE DISPOSITIVOS ===================== */
+function fusiona(local,remoto){
+  var res={creado:local.creado||remoto.creado,borrados:{}};
+  var b={};
+  [local.borrados||{},remoto.borrados||{}].forEach(function(m){
+    for(var k in m)if(!b[k]||m[k]>b[k])b[k]=m[k];
+  });
+  var corte=ahora()-90*864e5, cambios=0;
+  for(var k2 in b)if(b[k2]>corte)res.borrados[k2]=b[k2];
+  COLS.forEach(function(c){
+    var mapa={};
+    (remoto[c]||[]).forEach(function(r){mapa[r.id]=r;});
+    (local[c]||[]).forEach(function(r){
+      var o=mapa[r.id];
+      if(!o||(r.act||1)>=(o.act||1)){if(!o||JSON.stringify(o)!==JSON.stringify(r))cambios++;mapa[r.id]=r;}
+      else cambios++;
+    });
+    res[c]=[];
+    for(var k3 in mapa){
+      var reg=mapa[k3];
+      if(b[k3]&&b[k3]>(reg.act||1))continue;
+      res[c].push(reg);
+    }
+  });
+  res.cambios=cambios;
+  return res;
+}
+
+/* ===================== GOOGLE DRIVE ===================== */
+function estadoNube(e,detalle){
+  N.estado=e;if(detalle!==undefined)N.detalle=detalle;
+  var p=document.querySelector("#estado .punto"),t=document.getElementById("estado-txt");
+  if(!p)return;
+  p.className="punto "+(e==="on"?"on":e==="trabaja"?"trabaja":e==="mal"?"mal":"off");
+  t.textContent=N.detalle;
+}
+function cargaGIS(){
+  if(!N.clientId||N.gisListo)return;
+  if(location.protocol==="file:"){estadoNube("off","sin nube (archivo local)");return;}
+  var s=document.createElement("script");
+  s.src="https://accounts.google.com/gsi/client";s.async=true;s.defer=true;
+  s.onload=function(){
+    try{
+      N.cliente=google.accounts.oauth2.initTokenClient({client_id:N.clientId,scope:SCOPE,callback:function(){}});
+      N.gisListo=true;estadoNube("off","toca para conectar");
+      if(N.fileId||N.correo)pideToken(false);
+    }catch(e){estadoNube("mal","ID de cliente inválido");}
+  };
+  s.onerror=function(){estadoNube("mal","sin internet");};
+  document.head.appendChild(s);
+}
+function pideToken(interactivo){
+  return new Promise(function(res,rej){
+    if(!N.cliente)return rej(new Error("Google no ha cargado todavía."));
+    N.cliente.callback=function(r){
+      if(r.error){estadoNube("off","toca para conectar");return rej(new Error(r.error_description||r.error));}
+      N.token=r.access_token;N.expira=ahora()+(+r.expires_in||3500)*1000;
+      res(N.token);
+    };
+    try{N.cliente.requestAccessToken({prompt:interactivo?"consent":""});}catch(e){rej(e);}
+  });
+}
+async function token(){
+  if(N.token&&N.expira>ahora()+60000)return N.token;
+  return await pideToken(false);
+}
+async function api(url,opc){
+  opc=opc||{};
+  var t=await token();
+  opc.headers=Object.assign({},opc.headers||{},{Authorization:"Bearer "+t});
+  var r=await fetch(url,opc);
+  if(r.status===401){N.token=null;var t2=await pideToken(false);opc.headers.Authorization="Bearer "+t2;r=await fetch(url,opc);}
+  if(!r.ok){var txt=await r.text();throw new Error("Drive respondió "+r.status+": "+txt.slice(0,160));}
+  return r;
+}
+async function localizaArchivo(){
+  if(N.fileId){
+    try{var r0=await api("https://www.googleapis.com/drive/v3/files/"+N.fileId+"?fields=id,modifiedTime,trashed");
+      var m0=await r0.json();
+      if(!m0.trashed){N.marcaRemota=m0.modifiedTime;return N.fileId;}}catch(e){N.fileId=null;}
+  }
+  var q=encodeURIComponent("name='"+ARCHIVO+"' and trashed=false");
+  var r=await api("https://www.googleapis.com/drive/v3/files?q="+q+"&spaces=drive&fields=files(id,modifiedTime)&pageSize=5");
+  var d=await r.json();
+  if(d.files&&d.files.length){N.fileId=d.files[0].id;N.marcaRemota=d.files[0].modifiedTime;guardaCfg();return N.fileId;}
+  return null;
+}
+async function creaArchivo(){
+  var meta={name:ARCHIVO,mimeType:"application/json",description:"Datos de Bitácora TiL — no lo edites a mano"};
+  var lim="-=-=bitacora"+Date.now();
+  var cuerpo="--"+lim+"\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n"+JSON.stringify(meta)+
+    "\r\n--"+lim+"\r\nContent-Type: application/json\r\n\r\n"+JSON.stringify(paquete())+"\r\n--"+lim+"--";
+  var r=await api("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,modifiedTime",
+    {method:"POST",headers:{"Content-Type":'multipart/related; boundary="'+lim+'"'},body:cuerpo});
+  var d=await r.json();N.fileId=d.id;N.marcaRemota=d.modifiedTime;guardaCfg();
+  return d;
+}
+async function bajaArchivo(){
+  var r=await api("https://www.googleapis.com/drive/v3/files/"+N.fileId+"?alt=media");
+  var txt=await r.text();
+  if(!txt.trim())return null;
+  var d=JSON.parse(txt);
+  if(d.app!=="bitacora-til")throw new Error("ese archivo de Drive no es de Bitácora TiL");
+  return d;
+}
+async function subeArchivo(){
+  var r=await api("https://www.googleapis.com/upload/drive/v3/files/"+N.fileId+"?uploadType=media&fields=id,modifiedTime",
+    {method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(paquete())});
+  var d=await r.json();N.marcaRemota=d.modifiedTime;return d;
+}
+async function quienSoy(){
+  try{var r=await api("https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)");
+    var d=await r.json();if(d.user&&d.user.emailAddress){N.correo=d.user.emailAddress;guardaCfg();}}catch(e){}
+}
+
+var sincronizando=false, temporizador=null;
+function programaSync(){
+  if(!N.clientId||!N.gisListo)return;
+  if(temporizador)clearTimeout(temporizador);
+  temporizador=setTimeout(function(){sincroniza();},3500);
+}
+async function sincroniza(manual){
+  if(sincronizando)return;
+  if(!N.clientId||!N.gisListo){if(manual)aviso("Primero configura la conexión con Drive en la pestaña Nube.");return;}
+  sincronizando=true;N.error=null;estadoNube("trabaja","sincronizando…");
+  try{
+    await token();
+    if(!N.correo)await quienSoy();
+    var existe=await localizaArchivo();
+    if(!existe){await creaArchivo();S.sucio=false;}
+    else{
+      var remoto=await bajaArchivo();
+      if(remoto){
+        var antes=JSON.stringify([S.clientes,S.productos,S.contactos,S.agenda,S.borrados]);
+        var f=fusiona(paquete(),remoto);
+        COLS.forEach(function(c){S[c]=f[c];});
+        S.borrados=f.borrados;S.creado=f.creado;
+        var despues=JSON.stringify([S.clientes,S.productos,S.contactos,S.agenda,S.borrados]);
+        var cambioLocal=antes!==despues;
+        if(cambioLocal)guardaLocal();
+        if(cambioLocal||S.sucio||JSON.stringify(remoto.clientes||[])!==JSON.stringify(S.clientes))await subeArchivo();
+      }else await subeArchivo();
+      S.sucio=false;
+    }
+    N.ultima=ahora();
+    estadoNube("on","al día "+hora(N.ultima));
+    pinta();
+    if(manual)aviso("Sincronizado con Drive.",true);
+  }catch(e){
+    N.error=(e&&e.message)||"error desconocido";
+    estadoNube("mal","sin sincronizar");
+    if(manual)aviso("No se pudo sincronizar: "+N.error);
+    pinta();
+  }finally{sincronizando=false;}
+}
+async function conecta(){
+  if(!N.clientId)return aviso("Falta el ID de cliente de Google. Configúralo en la pestaña Nube.");
+  if(!N.gisListo){cargaGIS();return aviso("Google todavía está cargando; intenta en unos segundos.");}
+  try{estadoNube("trabaja","conectando…");await pideToken(true);await sincroniza(true);}
+  catch(e){estadoNube("off","toca para conectar");aviso("No se completó el acceso: "+((e&&e.message)||""));}
+}
+function desconecta(){
+  N.token=null;N.expira=0;N.correo=null;N.fileId=null;N.marcaRemota=null;
+  guardaCfg();estadoNube("off","toca para conectar");pinta();
+  aviso("Desconectado. Los datos siguen en este equipo.",true);
+}
+
+/* ===================== DERIVADOS ===================== */
+function contactosDe(cid){return S.contactos.filter(function(x){return x.clienteId===cid;}).sort(function(a,b){return a.fecha<b.fecha?1:-1;});}
+function agendaDe(cid){return S.agenda.filter(function(x){return x.clienteId===cid;}).sort(function(a,b){return a.fecha<b.fecha?-1:1;});}
+function ultimoContacto(cid){var h=contactosDe(cid);return h.length?h[0].fecha:null;}
+function proximoToque(c){return sumaDias(ultimoContacto(c.id)||c.alta||HOY,c.cadencia||30);}
+function estadoToque(c){var d=dias(HOY,proximoToque(c));
+  if(d<0)return{clase:"vence",txt:"vencido "+(-d)+" d",orden:d};
+  if(d===0)return{clase:"hoy",txt:"toca hoy",orden:0};
+  return{clase:"ok",txt:"en "+d+" d",orden:d};}
+function nombreCliente(cid){var c=cliente(cid);return c?c.nombre:"—";}
+function cliente(cid){return S.clientes.filter(function(x){return x.id===cid;})[0];}
+function producto(pid){return S.productos.filter(function(x){return x.id===pid;})[0];}
+function pendientes(){return S.agenda.filter(function(a){return !a.hecho;}).sort(function(a,b){return (a.fecha+(a.hora||""))<(b.fecha+(b.hora||""))?-1:1;});}
+
+/* ===================== VISTAS ===================== */
+var VISTAS=[["panel","Panel"],["clientes","Clientes"],["agenda","Agenda"],["catalogo","Catálogo"],["nube","Nube"]];
+function pintaNav(){
+  var n=document.getElementById("nav"),h="";
+  for(var i=0;i<VISTAS.length;i++){
+    var v=VISTAS[i][0],c="";
+    if(v==="clientes"&&S.clientes.length)c='<span class="cuenta">'+S.clientes.length+"</span>";
+    if(v==="agenda"&&pendientes().length)c='<span class="cuenta">'+pendientes().length+"</span>";
+    if(v==="catalogo"&&S.productos.length)c='<span class="cuenta">'+S.productos.length+"</span>";
+    h+='<button data-vista="'+v+'" aria-current="'+(S.vista===v)+'">'+VISTAS[i][1]+c+"</button>";
+  }
+  n.innerHTML=h;
+}
+function pinta(){
+  pintaNav();
+  var m=document.getElementById("vista"),h="";
+  if(S.msg)h+='<p class="aviso '+(S.msgBien?"bien":"mal")+'" role="status">'+esc(S.msg)+"</p>";
+  if(S.clientes.length&&!N.clientId&&S.vista!=="nube")
+    h+='<div class="banda"><span>Los datos están solo en este equipo. Conéctalo a tu Drive para usarlo también en el celular.</span><button class="btn chico" data-vista="nube">Configurar</button></div>';
+  if(S.vista==="panel")h+=vistaPanel();
+  else if(S.vista==="clientes")h+=vistaClientes();
+  else if(S.vista==="agenda")h+=vistaAgenda();
+  else if(S.vista==="catalogo")h+=vistaCatalogo();
+  else h+=vistaNube();
+  m.innerHTML=h;
+  if(S.ficha)pintaFicha();
+}
+
+function vistaPanel(){
+  if(!S.clientes.length)return '<div class="vacio"><h3>Todavía no hay clientes</h3><p>Da de alta el primero con <b>+ Cliente</b>. A partir de ahí se arman solos los recordatorios y la agenda.</p></div>';
+  var pend=pendientes();
+  var hoyAg=pend.filter(function(a){return a.fecha===HOY;});
+  var atras=pend.filter(function(a){return a.fecha<HOY;});
+  var prox=pend.filter(function(a){return a.fecha>HOY&&dias(HOY,a.fecha)<=7;});
+  var toques=S.clientes.map(function(c){return{c:c,t:estadoToque(c)};}).sort(function(a,b){return a.t.orden-b.t.orden;});
+  var vencidos=toques.filter(function(x){return x.t.orden<=0;});
+  var h='<div class="cifras">';
+  h+=cifra(S.clientes.length,"en el directorio","");
+  h+=cifra(vencidos.length,"por recontactar",vencidos.length?"alerta":"");
+  h+=cifra(atras.length+hoyAg.length,"en agenda para hoy","");
+  h+=cifra(S.clientes.filter(function(c){return c.estado==="Cotización enviada"||c.estado==="Negociación";}).length,"con cotización o negociación","");
+  h+="</div>";
+  h+='<div class="sec-tit"><h2>'+esc(fechaLarga(HOY))+'</h2><button class="btn sec chico" id="btn-imprimir">Imprimir hoja de ruta</button></div>';
+  h+='<div class="bloques"><section><div class="sec-tit"><h2>Agenda de hoy</h2></div>';
+  var ag=atras.concat(hoyAg);
+  h+=ag.length?'<div class="lista">'+ag.map(filaAgenda).join("")+"</div>":'<div class="vacio">Nada agendado para hoy.</div>';
+  if(prox.length)h+='<div class="sec-tit" style="margin:18px 0 12px"><h2>Próximos 7 días</h2></div><div class="lista">'+prox.map(filaAgenda).join("")+"</div>";
+  h+="</section><section><div class=\"sec-tit\"><h2>Toca recontactar</h2><span class=\"nota\">según la cadencia de cada cuenta</span></div>";
+  var lista=toques.filter(function(x){return x.t.orden<=7;}).slice(0,12);
+  h+=lista.length?'<div class="lista">'+lista.map(function(x){return filaCliente(x.c);}).join("")+"</div>":'<div class="vacio">Todo al día. El siguiente toque es '+esc(relativo(proximoToque(toques[0].c)))+".</div>";
+  return h+"</section></div>";
+}
+function cifra(n,t,cl){return '<div class="cifra '+cl+'"><b class="num">'+n+"</b><span>"+t+"</span></div>";}
+function filaCliente(c){
+  var t=estadoToque(c),u=ultimoContacto(c.id);
+  return '<button class="fila" data-ficha="'+esc(c.id)+'"><span class="fila-cuerpo"><b>'+esc(c.nombre)+"</b><small>"+
+    esc([c.ciudad,c.sector,c.contacto].filter(Boolean).join(" · "))+
+    (u?" · último contacto "+esc(fechaCorta(u)):" · sin contacto registrado")+
+    '</small></span><span class="fila-lado"><span class="pill '+t.clase+'">'+esc(t.txt)+'</span><span class="pill">'+esc(c.estado||"Prospecto")+"</span></span></button>";
+}
+function filaAgenda(a){
+  var tarde=a.fecha<HOY,hoy=a.fecha===HOY;
+  return '<button class="fila" data-ficha="'+esc(a.clienteId)+'"><span class="fila-cuerpo"><b>'+esc(a.titulo)+"</b><small>"+
+    esc(nombreCliente(a.clienteId))+(a.nota?" · "+esc(a.nota):"")+'</small></span><span class="fila-lado"><span class="pill '+(tarde?"vence":hoy?"hoy":"")+'">'+
+    esc(fechaCorta(a.fecha))+(a.hora?" "+esc(a.hora):"")+'</span><span class="pill">'+esc(a.tipo||"Cita")+"</span></span></button>";
+}
+
+function vistaClientes(){
+  var f=S.filtros;
+  var lista=S.clientes.filter(function(c){
+    if(f.ciudad&&c.ciudad!==f.ciudad)return false;
+    if(f.sector&&c.sector!==f.sector)return false;
+    if(f.estado&&c.estado!==f.estado)return false;
+    if(f.q){var t=(c.nombre+" "+(c.contacto||"")+" "+(c.notas||"")+" "+(c.ciudad||"")+" "+(c.sector||"")+" "+(c.email||"")+" "+(c.tel||"")).toLowerCase();
+      if(t.indexOf(f.q.toLowerCase())<0)return false;}
+    return true;
+  }).sort(function(a,b){return estadoToque(a).orden-estadoToque(b).orden;});
+  var h='<div class="filtros"><input class="campo buscar" id="f-q" type="search" placeholder="Buscar empresa, contacto, nota…" value="'+esc(f.q)+'">';
+  h+=selFiltro("f-ciudad","Todas las plazas",CIUDADES,f.ciudad)+selFiltro("f-sector","Todos los sectores",SECTORES,f.sector)+selFiltro("f-estado","Cualquier etapa",ESTADOS,f.estado);
+  h+='<button class="btn sec chico" id="btn-csv">Exportar CSV</button></div>';
+  if(!S.clientes.length)return h+'<div class="vacio"><h3>Directorio vacío</h3><p>Agrega tu primera cuenta con <b>+ Cliente</b>.</p></div>';
+  h+=lista.length?'<div class="lista">'+lista.map(filaCliente).join("")+"</div>":'<div class="vacio">Ninguna cuenta coincide con ese filtro.</div>';
+  return h+'<p class="aviso" style="margin-top:12px">'+lista.length+" de "+S.clientes.length+" cuentas, ordenadas por urgencia de recontacto.</p>";
+}
+function selFiltro(idSel,todo,ops,val){
+  var h='<select class="campo" id="'+idSel+'"><option value="">'+todo+"</option>";
+  for(var i=0;i<ops.length;i++)h+='<option'+(ops[i]===val?" selected":"")+">"+esc(ops[i])+"</option>";
+  return h+"</select>";
+}
+
+function vistaAgenda(){
+  var pend=pendientes(),hechos=S.agenda.filter(function(a){return a.hecho;}).sort(function(a,b){return a.fecha<b.fecha?1:-1;}).slice(0,12);
+  var h='<div class="sec-tit"><h2>Pendientes</h2><span class="nota">citas y recordatorios programados</span></div>';
+  if(!pend.length)h+='<div class="vacio"><h3>Agenda limpia</h3><p>Programa una cita desde la ficha de cualquier cliente.</p></div>';
+  else h+='<div class="lista">'+pend.map(function(a){
+    var tarde=a.fecha<HOY,hoy=a.fecha===HOY;
+    return '<div class="fila" style="cursor:default"><span class="fila-cuerpo"><b>'+esc(a.titulo)+"</b><small>"+esc(nombreCliente(a.clienteId))+(a.nota?" · "+esc(a.nota):"")+
+      '</small></span><span class="fila-lado"><span class="pill '+(tarde?"vence":hoy?"hoy":"")+'">'+esc(fechaCorta(a.fecha))+(a.hora?" "+esc(a.hora):"")+" · "+esc(relativo(a.fecha))+
+      '</span><span style="display:flex;gap:6px"><button class="btn sec chico" data-ficha="'+esc(a.clienteId)+'">Ficha</button><button class="btn chico" data-cerrar-cita="'+esc(a.id)+'">Hecho</button></span></span></div>';
+  }).join("")+"</div>";
+  if(hechos.length)h+='<div class="sec-tit" style="margin:26px 0 12px"><h2>Cerradas</h2></div><div class="lista">'+hechos.map(function(a){
+    return '<div class="fila tacha" style="cursor:default"><span class="fila-cuerpo"><b>'+esc(a.titulo)+"</b><small>"+esc(nombreCliente(a.clienteId))+'</small></span><span class="fila-lado"><span class="pill">'+esc(fechaCorta(a.fecha))+"</span></span></div>";
+  }).join("")+"</div>";
+  return h;
+}
+
+function vistaCatalogo(){
+  var h='<div class="sec-tit"><h2>Catálogo</h2><button class="btn sec chico" id="btn-prod">+ Producto</button></div>';
+  if(!S.productos.length)return h+'<div class="vacio"><h3>Sin productos cargados</h3><p>Agrega las líneas que manejas para poder marcarlas como interés en cada cuenta.</p></div>';
+  var porMarca={};
+  S.productos.forEach(function(p){var m=p.marca||"Sin marca";(porMarca[m]=porMarca[m]||[]).push(p);});
+  Object.keys(porMarca).sort().forEach(function(m){
+    h+='<div class="sec-tit" style="margin:20px 0 10px"><h2>'+esc(m)+'</h2><span class="nota">'+porMarca[m].length+' líneas</span></div><div class="lista">';
+    h+=porMarca[m].map(function(p){
+      var n=S.clientes.filter(function(c){return (c.productos||[]).indexOf(p.id)>=0;}).length;
+      return '<div class="fila" style="cursor:default"><span class="fila-cuerpo"><b>'+esc(p.nombre)+"</b><small>"+esc(p.categoria||"")+(p.notas?" · "+esc(p.notas):"")+
+        '</small></span><span class="fila-lado"><span class="pill '+(n?"acc":"")+'">'+n+' interesados</span><button class="btn peligro chico" data-borra-prod="'+esc(p.id)+'">Quitar</button></span></div>';
+    }).join("")+"</div>";
+  });
+  return h;
+}
+
+function vistaNube(){
+  var h='<div class="sec-tit"><h2>Nube y respaldos</h2></div>';
+  h+='<div class="caja" style="display:flex;flex-direction:column;gap:16px">';
+  if(!N.clientId){
+    h+="<p style='margin:0'><b>Todavía no está conectado.</b> Los datos viven solo en este dispositivo. Para usar el mismo directorio en la laptop y en el celular, pega abajo tu ID de cliente de Google; los pasos para obtenerlo están más abajo.</p>";
+    h+='<div><label class="lbl" for="cid">ID de cliente de Google</label><input class="campo" id="cid" placeholder="000000000000-xxxxxxxxxxxx.apps.googleusercontent.com"></div>';
+    h+='<div class="botonera"><button class="btn" id="btn-guarda-cid">Guardar y conectar</button></div>';
+  }else{
+    var txt=N.estado==="on"?"Conectado":N.estado==="trabaja"?"Trabajando…":N.estado==="mal"?"Con problema":"Configurado, sin conectar";
+    h+="<div><p style='margin:0 0 6px'><b>"+esc(txt)+"</b>"+(N.correo?" — "+esc(N.correo):"")+"</p>";
+    h+='<p class="aviso" style="margin:0">Archivo <code>'+ARCHIVO+'</code> en tu Drive'+(N.ultima?" · última sincronización a las "+esc(hora(N.ultima)):"")+(N.error?' · <span class="mal">'+esc(N.error)+"</span>":"")+"</p></div>";
+    h+='<div class="botonera"><button class="btn" id="btn-sync">Sincronizar ahora</button>'+
+       '<button class="btn sec" id="btn-conectar">Volver a dar acceso</button>'+
+       '<button class="btn sec" id="btn-cid-cambia">Cambiar ID de cliente</button>'+
+       '<button class="btn peligro" id="btn-desconecta">Desconectar</button></div>';
+    h+="<p class='aviso' style='margin:0'>Se sincroniza solo unos segundos después de cada cambio, al abrir la página y al salir de ella. Si capturas en la laptop y en el celular, los dos juegos de datos se combinan: gana el cambio más reciente de cada ficha.</p>";
+  }
+  h+="</div>";
+
+  h+='<div class="sec-tit" style="margin:26px 0 12px"><h2>Respaldo en archivo</h2></div><div class="caja">';
+  h+="<p style='margin:0 0 10px'>Hay <b class='num'>"+S.clientes.length+"</b> cuentas, <b class='num'>"+S.contactos.length+"</b> movimientos de bitácora, <b class='num'>"+
+     S.agenda.length+"</b> citas y <b class='num'>"+S.productos.length+"</b> productos.</p>";
+  h+='<div class="botonera"><button class="btn sec" id="btn-exportar">Exportar respaldo (.json)</button>'+
+     '<button class="btn sec" id="btn-csv2">Exportar directorio (.csv)</button>'+
+     '<button class="btn sec" id="btn-importar">Importar respaldo</button>'+
+     '<input type="file" id="archivo-import" accept=".json,application/json" hidden></div></div>';
+
+  h+='<div class="sec-tit" style="margin:26px 0 12px"><h2>Cómo conectarlo a tu Drive</h2></div><div class="caja">';
+  h+="<details"+(N.clientId?"":" open")+"><summary>Paso 1 — Publicar la página (una sola vez)</summary><ol class='pasos' style='margin-top:10px'>"+
+    "<li>Crea una cuenta en <code>github.com</code> si no tienes.</li>"+
+    "<li>Crea un repositorio nuevo, público, llamado por ejemplo <code>bitacora</code>.</li>"+
+    "<li>Sube ahí este archivo con el nombre <code>index.html</code>.</li>"+
+    "<li>En el repositorio entra a <b>Settings → Pages</b>, y en <b>Source</b> elige la rama <code>main</code> y la carpeta <code>/ (root)</code>. Guarda.</li>"+
+    "<li>En un par de minutos tu página vive en <code>https://TUUSUARIO.github.io/bitacora/</code>. Esa es la dirección que vas a abrir siempre, en la laptop y en el celular.</li></ol></details>";
+  h+="<details style='margin-top:14px'><summary>Paso 2 — Crear el permiso de Google</summary><ol class='pasos' style='margin-top:10px'>"+
+    "<li>Entra a <code>console.cloud.google.com</code> con tu cuenta de Google y crea un proyecto nuevo; llámalo <b>Bitacora TiL</b>.</li>"+
+    "<li>Busca <b>Google Drive API</b> en la biblioteca de APIs y actívala.</li>"+
+    "<li>Ve a <b>APIs y servicios → Pantalla de consentimiento</b>. Tipo de usuario: <b>Externo</b>. Pon un nombre de app y tu correo. En la sección de usuarios de prueba, agrega tu propio correo de Gmail.</li>"+
+    "<li>Ve a <b>Credenciales → Crear credenciales → ID de cliente de OAuth</b>. Tipo: <b>Aplicación web</b>.</li>"+
+    "<li>En <b>Orígenes autorizados de JavaScript</b> agrega exactamente <code>https://TUUSUARIO.github.io</code> (sin la barra ni el nombre del repositorio).</li>"+
+    "<li>Copia el <b>ID de cliente</b> que te da y pégalo aquí arriba. No hay secreto que copiar; las apps de navegador no lo usan.</li></ol>"+
+    "<p class='aviso' style='margin:10px 0 0'>El permiso que pide la app es el mínimo: solo puede ver y editar los archivos que ella misma creó en tu Drive. No puede leer el resto de tu Drive. Como la app queda en modo de prueba, Google te mostrará una pantalla de advertencia la primera vez; elige <b>Configuración avanzada → Ir a (nombre de la app)</b>.</p></details>";
+  h+="<details style='margin-top:14px'><summary>Paso 3 — En el celular</summary><ol class='pasos' style='margin-top:10px'>"+
+    "<li>Abre la misma dirección en Chrome o Safari del teléfono.</li>"+
+    "<li>Conéctate con la misma cuenta de Google. Jalará el archivo y verás el mismo directorio.</li>"+
+    "<li>En el menú del navegador elige <b>Agregar a pantalla de inicio</b>: queda con su icono, como una app.</li></ol></details>";
+  h+='<div class="botonera" style="margin-top:16px"><button class="btn sec chico" id="btn-tema">Cambiar tema claro/oscuro</button>'+
+     '<button class="btn peligro chico" id="btn-borrar-todo">Borrar los datos de este dispositivo</button></div>';
+  return h+"</div>";
+}
+
+/* ===================== FICHA ===================== */
+function pintaFicha(){
+  var c=cliente(S.ficha),capa=document.getElementById("capa-ficha");
+  if(!c){capa.hidden=true;S.ficha=null;return;}
+  var t=estadoToque(c),hist=contactosDe(c.id),cit=agendaDe(c.id).filter(function(a){return !a.hecho;});
+  var h='<div class="hoja" role="dialog" aria-modal="true" aria-label="Ficha de '+esc(c.nombre)+'">';
+  h+='<div class="hoja-cab"><div><h2>'+esc(c.nombre)+'</h2><p class="aviso" style="margin:4px 0 0">'+esc([c.ciudad,c.sector].filter(Boolean).join(" · "))+'</p></div><button class="cerrar" data-cierra="ficha" aria-label="Cerrar">&#10005;</button></div><div class="hoja-cuerpo">';
+  h+='<div class="chips"><span class="pill '+t.clase+'">Recontacto: '+esc(t.txt)+'</span><span class="pill acc">'+esc(c.estado||"Prospecto")+'</span><span class="pill">cada '+(c.cadencia||30)+" días</span></div>";
+  h+='<dl class="ficha-datos">';
+  h+=dato("Contacto",esc([c.contacto,c.puesto].filter(Boolean).join(" — ")));
+  h+=dato("Teléfono",c.tel?'<a href="tel:'+esc(c.tel)+'">'+esc(c.tel)+"</a>":"");
+  h+=dato("Correo",c.email?'<a href="mailto:'+esc(c.email)+'">'+esc(c.email)+"</a>":"");
+  h+=dato("Dirección",esc(c.dir));
+  h+=dato("Último contacto",hist.length?esc(fechaCorta(hist[0].fecha))+" ("+esc(relativo(hist[0].fecha))+")":"");
+  h+=dato("Siguiente toque",esc(fechaCorta(proximoToque(c))));
+  h+="</dl>";
+  if(c.notas)h+='<div><label class="lbl">Notas</label><p style="margin:0;white-space:pre-wrap">'+esc(c.notas)+"</p></div>";
+  h+='<div><div class="sec-tit"><h2>Interés</h2><span class="nota">toca para marcar</span></div><div class="chips">';
+  h+=S.productos.length?S.productos.map(function(p){
+    return '<button class="chip" data-toggle-prod="'+esc(p.id)+'" aria-pressed="'+((c.productos||[]).indexOf(p.id)>=0)+'">'+esc(p.nombre)+"</button>";
+  }).join(""):'<span class="aviso">Carga productos en el catálogo para marcarlos aquí.</span>';
+  h+="</div></div>";
+  h+='<div><div class="sec-tit"><h2>Bitácora</h2><button class="btn chico" data-registra="'+esc(c.id)+'">Registrar contacto</button></div>';
+  h+=hist.length?"<div>"+hist.slice(0,20).map(function(x){
+    return '<div class="hist-it"><span class="f">'+esc(fechaCorta(x.fecha))+'</span><span style="flex:1;min-width:0"><span class="pill">'+esc(x.tipo)+"</span>"+(x.nota?"<p>"+esc(x.nota)+"</p>":"")+
+      '</span><button class="btn peligro chico" data-borra-contacto="'+esc(x.id)+'">&#10005;</button></div>';
+  }).join("")+"</div>":'<p class="aviso">Sin movimientos registrados todavía.</p>';
+  h+="</div>";
+  h+='<div><div class="sec-tit"><h2>Agenda</h2><button class="btn sec chico" data-cita="'+esc(c.id)+'">Programar</button></div>';
+  h+=cit.length?"<div>"+cit.map(function(a){
+    return '<div class="hist-it"><span class="f">'+esc(fechaCorta(a.fecha))+(a.hora?"<br>"+esc(a.hora):"")+'</span><span style="flex:1;min-width:0"><b>'+esc(a.titulo)+"</b>"+(a.nota?"<p>"+esc(a.nota)+"</p>":"")+
+      '</span><button class="btn sec chico" data-cerrar-cita="'+esc(a.id)+'">Hecho</button></div>';
+  }).join("")+"</div>":'<p class="aviso">Nada programado con esta cuenta.</p>';
+  h+="</div>";
+  h+='<div class="pie"><button class="btn peligro chico" data-borra-cliente="'+esc(c.id)+'">Eliminar cuenta</button><button class="btn sec" data-edita="'+esc(c.id)+'">Editar datos</button><button class="btn" data-cierra="ficha">Cerrar</button></div>';
+  capa.innerHTML=h+"</div></div>";capa.hidden=false;
+}
+function dato(t,v){return "<div><dt>"+esc(t)+"</dt><dd>"+(v||"—")+"</dd></div>";}
+
+/* ===================== FORMULARIOS ===================== */
+function abreForm(titulo,cuerpo,alGuardar,boton){
+  var capa=document.getElementById("capa-form");
+  capa.innerHTML='<div class="hoja" style="max-width:560px" role="dialog" aria-modal="true" aria-label="'+esc(titulo)+'">'+
+    '<div class="hoja-cab"><h2>'+esc(titulo)+'</h2><button class="cerrar" data-cierra="form" aria-label="Cerrar">&#10005;</button></div>'+
+    '<form class="hoja-cuerpo" id="form-activo"><div class="rejilla">'+cuerpo+'</div>'+
+    '<div class="pie"><button type="button" class="btn sec" data-cierra="form">Cancelar</button><button type="submit" class="btn">'+esc(boton||"Guardar")+"</button></div></form></div>";
+  capa.hidden=false;
+  var f=document.getElementById("form-activo");
+  f.addEventListener("submit",function(ev){ev.preventDefault();
+    var v={};Array.prototype.forEach.call(f.querySelectorAll("[name]"),function(el){v[el.name]=el.value.trim();});
+    if(alGuardar(v)!==false)cierraForm();});
+  var p=f.querySelector("input,select,textarea");if(p)p.focus();
+}
+function cierraForm(){var c=document.getElementById("capa-form");c.hidden=true;c.innerHTML="";}
+function cTexto(n,e,v,ancho,tipo){return '<div class="'+(ancho?"ancho":"")+'"><label class="lbl" for="c-'+n+'">'+esc(e)+'</label><input class="campo" id="c-'+n+'" name="'+n+'" type="'+(tipo||"text")+'" value="'+esc(v==null?"":v)+'"></div>';}
+function cSelect(n,e,ops,v,ancho){var h='<div class="'+(ancho?"ancho":"")+'"><label class="lbl" for="c-'+n+'">'+esc(e)+'</label><select class="campo" id="c-'+n+'" name="'+n+'">';
+  for(var i=0;i<ops.length;i++)h+='<option'+(ops[i]===v?" selected":"")+">"+esc(ops[i])+"</option>";return h+"</select></div>";}
+function cArea(n,e,v){return '<div class="ancho"><label class="lbl" for="c-'+n+'">'+esc(e)+'</label><textarea class="campo" id="c-'+n+'" name="'+n+'" rows="3">'+esc(v||"")+"</textarea></div>";}
+
+function formCliente(c){
+  c=c||{};
+  var cuerpo=cTexto("nombre","Empresa o institución",c.nombre,true)+cTexto("contacto","Persona de contacto",c.contacto)+cTexto("puesto","Puesto",c.puesto)+
+    cTexto("tel","Teléfono",c.tel,false,"tel")+cTexto("email","Correo",c.email,false,"email")+
+    cSelect("ciudad","Plaza",CIUDADES,c.ciudad||"Torreón")+cSelect("sector","Sector",SECTORES,c.sector||"Clínico")+
+    cSelect("estado","Etapa",ESTADOS,c.estado||"Prospecto")+cTexto("cadencia","Recontactar cada (días)",c.cadencia||30,false,"number")+
+    cTexto("dir","Dirección",c.dir,true)+cArea("notas","Notas — equipo instalado, presupuesto, quién decide",c.notas);
+  abreForm(c.id?"Editar cuenta":"Nueva cuenta",cuerpo,function(v){
+    if(!v.nombre){aviso("Hace falta el nombre de la empresa.");return false;}
+    var o={id:c.id||id(),nombre:v.nombre,contacto:v.contacto,puesto:v.puesto,tel:v.tel,email:v.email,ciudad:v.ciudad,sector:v.sector,
+      estado:v.estado,cadencia:Math.max(1,parseInt(v.cadencia,10)||30),dir:v.dir,notas:v.notas,productos:c.productos||[],alta:c.alta||HOY};
+    if(!c.id)S.ficha=o.id;
+    guardar("clientes",o);
+  },c.id?"Guardar cambios":"Dar de alta");
+}
+function formContacto(cid){
+  abreForm("Registrar contacto · "+nombreCliente(cid),
+    cSelect("tipo","Tipo",TIPOS,"Visita")+cTexto("fecha","Fecha",HOY,false,"date")+cArea("nota","Qué pasó / qué sigue",""),
+    function(v){guardar("contactos",{id:id(),clienteId:cid,tipo:v.tipo,fecha:v.fecha||HOY,nota:v.nota});},"Registrar");
+}
+function formCita(cid){
+  abreForm("Programar · "+nombreCliente(cid),
+    cTexto("titulo","Qué vas a hacer","Visita de seguimiento",true)+cSelect("tipo","Tipo",["Cita","Recordatorio","Entrega","Demostración"],"Cita")+
+    cTexto("fecha","Fecha",sumaDias(HOY,7),false,"date")+cTexto("hora","Hora","",false,"time")+cArea("nota","Nota",""),
+    function(v){if(!v.titulo){aviso("Ponle un título a la cita.");return false;}
+      guardar("agenda",{id:id(),clienteId:cid,titulo:v.titulo,tipo:v.tipo,fecha:v.fecha||HOY,hora:v.hora,nota:v.nota,hecho:false});},"Agendar");
+}
+function formProducto(){
+  abreForm("Nuevo producto",cTexto("nombre","Producto o línea","",true)+cTexto("marca","Marca","")+cTexto("categoria","Categoría","")+cArea("notas","Nota de venta",""),
+    function(v){if(!v.nombre){aviso("Falta el nombre del producto.");return false;}
+      guardar("productos",{id:id(),nombre:v.nombre,marca:v.marca,categoria:v.categoria,notas:v.notas});},"Agregar");
+}
+
+/* ===================== ARCHIVOS E IMPRESIÓN ===================== */
+function descarga(nombre,texto,tipo){
+  var b=new Blob([texto],{type:tipo||"application/json;charset=utf-8"});
+  var u=URL.createObjectURL(b),a=document.createElement("a");
+  a.href=u;a.download=nombre;document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(u);a.remove();},1500);
+}
+function textoCSV(){
+  var cab=["Empresa","Contacto","Puesto","Telefono","Correo","Plaza","Sector","Etapa","Cadencia_dias","Ultimo_contacto","Siguiente_toque","Productos_interes","Notas"];
+  var filas=S.clientes.map(function(c){return [c.nombre,c.contacto,c.puesto,c.tel,c.email,c.ciudad,c.sector,c.estado,c.cadencia,
+    ultimoContacto(c.id)||"",proximoToque(c),(c.productos||[]).map(function(p){var o=producto(p);return o?o.nombre:"";}).filter(Boolean).join(" | "),c.notas];});
+  return "﻿"+[cab].concat(filas).map(function(f){return f.map(function(x){return '"'+String(x==null?"":x).replace(/"/g,'""')+'"';}).join(",");}).join("\r\n");
+}
+function importa(file){
+  var r=new FileReader();
+  r.onload=function(){
+    try{
+      var d=JSON.parse(r.result);
+      if(!d||d.app!=="bitacora-til")throw new Error("no es un respaldo de Bitácora TiL");
+      var f=fusiona(paquete(),d);
+      COLS.forEach(function(c){S[c]=f[c];});S.borrados=f.borrados;
+      S.sucio=true;guardaLocal();pinta();programaSync();
+      aviso("Respaldo combinado: quedan "+S.clientes.length+" cuentas.",true);
+    }catch(e){aviso("Ese archivo no se pudo leer ("+(e.message||"formato desconocido")+").");}
+  };
+  r.readAsText(file);
+}
+function imprimeRuta(){
+  var pend=pendientes().filter(function(a){return a.fecha<=HOY;});
+  var toques=S.clientes.map(function(c){return{c:c,t:estadoToque(c)};}).filter(function(x){return x.t.orden<=0;}).sort(function(a,b){return a.t.orden-b.t.orden;});
+  var h="<h1>Hoja de ruta</h1><div class='sub'>"+esc(fechaLarga(HOY))+" — Bitácora TiL</div>";
+  h+="<h2>Agenda ("+pend.length+")</h2>";
+  h+=pend.length?pend.map(function(a){
+    var c=cliente(a.clienteId)||{};
+    return "<div class='it'><b>"+esc(a.titulo)+" — "+esc(nombreCliente(a.clienteId))+"</b><small>"+
+      esc([c.ciudad,c.contacto,c.tel,a.hora?"a las "+a.hora:""].filter(Boolean).join(" · "))+(a.nota?"<br>"+esc(a.nota):"")+
+      "</small><div class='ren'></div></div>";
+  }).join(""):"<p>Sin citas.</p>";
+  h+="<h2>Por recontactar ("+toques.length+")</h2>";
+  h+=toques.length?toques.map(function(x){
+    var c=x.c,u=ultimoContacto(c.id);
+    return "<div class='it'><b>"+esc(c.nombre)+"</b><small>"+esc([c.ciudad,c.contacto,c.tel,c.estado].filter(Boolean).join(" · "))+
+      " · "+esc(x.t.txt)+(u?" · último contacto "+esc(fechaCorta(u)):" · sin contacto previo")+
+      ((c.productos||[]).length?"<br>Interés: "+esc((c.productos||[]).map(function(p){var o=producto(p);return o?o.nombre:"";}).filter(Boolean).join(", ")):"")+
+      "</small><div class='ren'></div></div>";
+  }).join(""):"<p>Nada vencido.</p>";
+  document.getElementById("impresion").innerHTML=h;
+  window.print();
+}
+
+/* ===================== EVENTOS ===================== */
+document.addEventListener("click",function(ev){
+  var el=ev.target.closest("[data-vista],[data-ficha],[data-cierra],[data-edita],[data-registra],[data-cita],[data-toggle-prod],[data-cerrar-cita],[data-borra-contacto],[data-borra-cliente],[data-borra-prod],button[id]");
+  if(!el)return;
+  var d=el.dataset;
+  switch(el.id){
+    case "btn-nuevo":return formCliente();
+    case "btn-prod":return formProducto();
+    case "btn-csv":case "btn-csv2":return descarga("directorio-til-"+HOY+".csv",textoCSV(),"text/csv;charset=utf-8");
+    case "btn-exportar":return descarga("bitacora-til-"+HOY+".json",JSON.stringify(paquete(),null,2));
+    case "btn-importar":return document.getElementById("archivo-import").click();
+    case "btn-imprimir":return imprimeRuta();
+    case "estado":case "btn-sync":return void (N.clientId?(N.correo||N.fileId?sincroniza(true):conecta()):(S.vista="nube",pinta()));
+    case "btn-conectar":return void conecta();
+    case "btn-desconecta":return desconecta();
+    case "btn-guarda-cid":{
+      var v=(document.getElementById("cid").value||"").trim();
+      if(!/\.apps\.googleusercontent\.com$/.test(v))return aviso("Ese ID no se ve bien; debe terminar en .apps.googleusercontent.com");
+      N.clientId=v;guardaCfg();N.gisListo=false;cargaGIS();pinta();
+      setTimeout(function(){conecta();},1200);return;}
+    case "btn-cid-cambia":{N.clientId=null;guardaCfg();N.gisListo=false;return pinta();}
+    case "btn-tema":{
+      var r=document.documentElement,oscuro=r.getAttribute("data-theme")==="dark";
+      r.setAttribute("data-theme",oscuro?"light":"dark");
+      try{localStorage.setItem("bitacora-til-tema",oscuro?"light":"dark");}catch(e){}
+      return;}
+    case "btn-borrar-todo":{
+      if(el.dataset.confirmado){try{localStorage.removeItem(LLAVE);}catch(e){}
+        COLS.forEach(function(c){S[c]=[];});S.borrados={};guardaLocal();pinta();
+        return aviso("Datos borrados de este dispositivo. Lo que esté en Drive sigue ahí.",true);}
+      el.dataset.confirmado="1";el.textContent="Toca otra vez para confirmar";return;}
+  }
+  if(d.vista){S.vista=d.vista;pinta();window.scrollTo(0,0);return;}
+  if(d.cierra==="ficha"){S.ficha=null;document.getElementById("capa-ficha").hidden=true;return;}
+  if(d.cierra==="form")return cierraForm();
+  if(d.ficha){S.ficha=d.ficha;pintaFicha();return;}
+  if(d.edita)return formCliente(cliente(d.edita));
+  if(d.registra)return formContacto(d.registra);
+  if(d.cita)return formCita(d.cita);
+  if(d.cerrarCita){var a=S.agenda.filter(function(x){return x.id===d.cerrarCita;})[0];
+    if(a){var n={};for(var k in a)n[k]=a[k];n.hecho=true;guardar("agenda",n);}return;}
+  if(d.borraContacto)return borrar("contactos",d.borraContacto);
+  if(d.borraProd)return borrar("productos",d.borraProd);
+  if(d.borraCliente){
+    if(el.dataset.confirmado){
+      S.ficha=null;document.getElementById("capa-ficha").hidden=true;
+      contactosDe(d.borraCliente).forEach(function(x){S.borrados[x.id]=ahora();});
+      agendaDe(d.borraCliente).forEach(function(x){S.borrados[x.id]=ahora();});
+      S.contactos=S.contactos.filter(function(x){return x.clienteId!==d.borraCliente;});
+      S.agenda=S.agenda.filter(function(x){return x.clienteId!==d.borraCliente;});
+      return borrar("clientes",d.borraCliente);}
+    el.dataset.confirmado="1";el.textContent="Toca otra vez para confirmar";return;}
+  if(d.toggleProd){
+    var c=cliente(S.ficha);if(!c)return;
+    var l=(c.productos||[]).slice(),i=l.indexOf(d.toggleProd);
+    if(i<0)l.push(d.toggleProd);else l.splice(i,1);
+    var n2={};for(var k2 in c)n2[k2]=c[k2];n2.productos=l;return guardar("clientes",n2);}
+});
+document.addEventListener("input",function(ev){
+  if(ev.target.id==="f-q"){S.filtros.q=ev.target.value;var p=ev.target.selectionStart;pinta();
+    var n=document.getElementById("f-q");if(n){n.focus();try{n.setSelectionRange(p,p);}catch(e){}}}
+});
+document.addEventListener("change",function(ev){
+  var m={"f-ciudad":"ciudad","f-sector":"sector","f-estado":"estado"};
+  if(m[ev.target.id]){S.filtros[m[ev.target.id]]=ev.target.value;return pinta();}
+  if(ev.target.id==="archivo-import"&&ev.target.files[0]){importa(ev.target.files[0]);ev.target.value="";}
+});
+document.addEventListener("keydown",function(ev){
+  if(ev.key!=="Escape")return;
+  var cf=document.getElementById("capa-form");
+  if(!cf.hidden)return cierraForm();
+  if(S.ficha){S.ficha=null;document.getElementById("capa-ficha").hidden=true;}
+});
+document.getElementById("capa-ficha").addEventListener("click",function(ev){if(ev.target===this){S.ficha=null;this.hidden=true;}});
+document.getElementById("capa-form").addEventListener("click",function(ev){if(ev.target===this)cierraForm();});
+document.addEventListener("visibilitychange",function(){
+  if(document.visibilityState==="hidden"){if(S.sucio)sincroniza();}
+  else if(N.clientId&&N.gisListo&&(!N.ultima||ahora()-N.ultima>120000))sincroniza();
+});
+
+/* ===================== ARRANQUE ===================== */
+try{var tema=localStorage.getItem("bitacora-til-tema");if(tema)document.documentElement.setAttribute("data-theme",tema);}catch(e){}
+cargaCfg();
+if(!cargaLocal()){
+  S.creado=new Date().toISOString();
+  var t0=ahora();
+  S.productos=[
+    ["p1","S1 TITAN (FRX portátil)","Bruker","Fluorescencia de rayos X","Aleaciones y metales en piso de planta"],
+    ["p2","S2 PUMA (FRX de sobremesa)","Bruker","Fluorescencia de rayos X","Elemental en suelos, cementos, minerales"],
+    ["p3","Q4 TASMAN (espectrómetro de chispa)","Bruker","Emisión óptica","Control de colada y materia prima metálica"],
+    ["p4","ALPHA II (FTIR compacto)","Bruker","Espectroscopía infrarroja","Identificación de materia prima y polímeros"],
+    ["p5","D2 PHASER (difracción de rayos X)","Bruker","Difracción","Fases cristalinas en minería y cemento"],
+    ["p6","Evidence Investigator","Randox","Biochip multianalito","Micotoxinas, residuos y paneles múltiples en una corrida"],
+    ["p7","Analizadores RX series","Randox","Química clínica","Equipo y reactivo de química clínica"],
+    ["p8","Acusera (controles y QC)","Randox","Control de calidad","Controles de tercera opinión e interlaboratorio"],
+    ["p9","Termocicladores CFX (qPCR)","Bio-Rad","Biología molecular",""],
+    ["p10","Electroforesis y transferencia","Bio-Rad","Separación de proteínas",""],
+    ["p11","Controles Liquichek","Bio-Rad","Control de calidad",""]
+  ].map(function(p){return {id:p[0],nombre:p[1],marca:p[2],categoria:p[3],notas:p[4],act:t0};});
+  S.clientes=[
+    {id:"c1",nombre:"CON-BAC",contacto:"",puesto:"",tel:"",email:"",ciudad:"Gómez Palacio",sector:"Clínico",estado:"Prospecto",
+      cadencia:15,dir:"",notas:"Laboratorio. Propuesta en preparación. Falta contacto y teléfono.",productos:["p7","p8"],alta:HOY,act:t0},
+    {id:"c2",nombre:"Industrias de Linamar (ILSA)",contacto:"",puesto:"",tel:"",email:"",ciudad:"Gómez Palacio",sector:"Automotriz",estado:"Prospecto",
+      cadencia:15,dir:"",notas:"Planta de componentes de motor. Propuesta en preparación. Falta contacto y teléfono.",productos:["p3","p1"],alta:HOY,act:t0},
+    {id:"c3",nombre:"Rock River Laboratory México",contacto:"",puesto:"",tel:"",email:"",ciudad:"Torreón",sector:"Agropecuario",estado:"Contactado",
+      cadencia:15,dir:"",notas:"Buscan equipo para análisis de suelo y agua; hoy mandan esas muestras fuera. También trabajan micotoxinas. Se les habló del Evidence Investigator.",
+      productos:["p6","p2"],alta:HOY,act:t0}
+  ];
+  S.contactos=[{id:"ct1",clienteId:"c3",tipo:"Visita",fecha:HOY,act:t0,
+    nota:"Comentaron que mandan fuera suelo y agua, y que trabajan micotoxinas. Se presentó el Evidence Investigator. (Ajusta la fecha real.)"}];
+  guardaLocal();
+}
+pinta();
+estadoNube(N.clientId?"off":"off",N.clientId?"conectando…":"solo este equipo");
+cargaGIS();
+if(N.clientId)setTimeout(function(){if(N.gisListo)sincroniza();},2500);
+})();
+</script>
+</body>
+</html>
