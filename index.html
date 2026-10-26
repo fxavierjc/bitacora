@@ -198,7 +198,7 @@ var S={clientes:[],productos:[],contactos:[],agenda:[],borrados:{},creado:null,
   vista:"panel",filtros:{q:"",ciudad:"",sector:"",estado:""},ficha:null,msg:"",msgBien:false,sucio:false};
 
 var N={clientId:null,token:null,expira:0,fileId:null,marcaRemota:null,correo:null,cliente:null,
-  gisListo:false,estado:"off",detalle:"local",ultima:null,error:null};
+  gisListo:false,estado:"off",detalle:"local",ultima:null,error:null,cbToken:null,cbError:null};
 
 /* ===================== ALMACÉN LOCAL ===================== */
 function paquete(){
@@ -283,24 +283,57 @@ function cargaGIS(){
   s.src="https://accounts.google.com/gsi/client";s.async=true;s.defer=true;
   s.onload=function(){
     try{
-      N.cliente=google.accounts.oauth2.initTokenClient({client_id:N.clientId,scope:SCOPE,callback:function(){}});
+      N.cliente=google.accounts.oauth2.initTokenClient({
+        client_id:N.clientId,scope:SCOPE,
+        callback:function(r){if(N.cbToken)N.cbToken(r);},
+        error_callback:function(e){if(N.cbError)N.cbError(e);}
+      });
       N.gisListo=true;estadoNube("off","toca para conectar");
-      if(N.fileId||N.correo)pideToken(false);
+      arranqueNube();
     }catch(e){estadoNube("mal","ID de cliente inválido");}
   };
   s.onerror=function(){estadoNube("mal","sin internet");};
   document.head.appendChild(s);
 }
+/* Una sola petición de token a la vez, siempre con desenlace: resuelve, falla o expira. */
+var peticionToken=null, abortaPendiente=null, pendienteInteractiva=false;
 function pideToken(interactivo){
-  return new Promise(function(res,rej){
-    if(!N.cliente)return rej(new Error("Google no ha cargado todavía."));
-    N.cliente.callback=function(r){
-      if(r.error){estadoNube("off","toca para conectar");return rej(new Error(r.error_description||r.error));}
-      N.token=r.access_token;N.expira=ahora()+(+r.expires_in||3500)*1000;
-      res(N.token);
+  if(peticionToken){
+    if(!interactivo||pendienteInteractiva)return peticionToken;
+    if(abortaPendiente)abortaPendiente();   /* un toque del usuario manda sobre el intento silencioso */
+  }
+  pendienteInteractiva=!!interactivo;
+  peticionToken=new Promise(function(res,rej){
+    if(!N.cliente){peticionToken=null;return rej(new Error("Google todavía no carga."));}
+    var cerrado=false;
+    function fin(err,tok){
+      if(cerrado)return;
+      cerrado=true;clearTimeout(reloj);N.cbToken=null;N.cbError=null;
+      peticionToken=null;abortaPendiente=null;pendienteInteractiva=false;
+      if(err)rej(err);else res(tok);
+    }
+    abortaPendiente=function(){fin(new Error("reemplazado"));};
+    var reloj=setTimeout(function(){
+      fin(new Error(interactivo?"Google no respondió. Si el navegador bloqueó la ventana emergente, permítela para este sitio y vuelve a tocar Conectar.":"sin respuesta de Google"));
+    },interactivo?90000:12000);
+    N.cbToken=function(r){
+      if(!r||r.error)return fin(new Error((r&&(r.error_description||r.error))||"acceso no concedido"));
+      N.token=r.access_token;N.expira=ahora()+(+r.expires_in||3500)*1000;fin(null,N.token);
     };
-    try{N.cliente.requestAccessToken({prompt:interactivo?"consent":""});}catch(e){rej(e);}
+    N.cbError=function(e){
+      var t=e&&e.type;
+      fin(new Error(t==="popup_failed_to_open"?"el navegador bloqueó la ventana de Google; permite ventanas emergentes para este sitio":
+        t==="popup_closed"?"se cerró la ventana de Google antes de terminar":(t||"no se pudo abrir el acceso de Google")));
+    };
+    try{N.cliente.requestAccessToken({prompt:interactivo?"consent":""});}catch(e){fin(e);}
   });
+  return peticionToken;
+}
+/* Al abrir la página intenta reanudar la sesión sin molestar. Si no se puede, deja el botón listo. */
+async function arranqueNube(){
+  if(!(N.fileId||N.correo))return;
+  try{await pideToken(false);await sincroniza();}
+  catch(e){estadoNube("off","toca para conectar");}
 }
 async function token(){
   if(N.token&&N.expira>ahora()+60000)return N.token;
@@ -362,8 +395,9 @@ function programaSync(){
   temporizador=setTimeout(function(){sincroniza();},3500);
 }
 async function sincroniza(manual){
-  if(sincronizando)return;
+  if(sincronizando&&!manual)return;
   if(!N.clientId||!N.gisListo){if(manual)aviso("Primero configura la conexión con Drive en la pestaña Nube.");return;}
+  sincronizando=false;
   sincronizando=true;N.error=null;estadoNube("trabaja","sincronizando…");
   try{
     await token();
@@ -849,10 +883,10 @@ if(!cargaLocal()){
   guardaLocal();
 }
 pinta();
-estadoNube(N.clientId?"off":"off",N.clientId?"conectando…":"solo este equipo");
+estadoNube("off",N.clientId?"iniciando…":"solo este equipo");
 cargaGIS();
-if(N.clientId)setTimeout(function(){if(N.gisListo)sincroniza();},2500);
 })();
 </script>
 </body>
 </html>
+
